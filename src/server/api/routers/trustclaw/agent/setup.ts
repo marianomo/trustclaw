@@ -1,5 +1,5 @@
 import { ToolLoopAgent, stepCountIs } from "ai";
-import type { ToolSet, SystemModelMessage } from "ai";
+import type { ToolSet, SystemModelMessage, LanguageModel } from "ai";
 import { google } from "@ai-sdk/google";
 import { groq } from "@ai-sdk/groq";
 import { db } from "~/server/clients/db";
@@ -171,14 +171,15 @@ export async function prepareAgentRun(
     },
   });
 
-  const resolveModel = (modelId: string) => {
+  const resolveModel = (modelId: string): LanguageModel => {
     if (modelId.startsWith("google/")) {
-      return google(modelId.replace("google/", ""));
+      return google(modelId.replace("google/", "")) as unknown as LanguageModel;
     }
     if (modelId.startsWith("groq/")) {
-      return groq(modelId.replace("groq/", ""));
+      return groq(modelId.replace("groq/", "")) as unknown as LanguageModel;
     }
-    return modelId.startsWith("anthropic/") ? modelId : `anthropic/${modelId}`;
+    const anthropicId = modelId.startsWith("anthropic/") ? modelId : `anthropic/${modelId}`;
+    return anthropicId as unknown as LanguageModel;
   };
   const model = resolveModel(instance.anthropicModel);
 
