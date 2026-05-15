@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.0",
-    "@ai-sdk/groq": "^1.0.0",
+    "@ai-sdk/groq": "^3.0.0",
     "@ai-sdk/react": "^3.0.87",
     "@composio/core": "^0.6.3",
     "@composio/vercel": "^0.6.3",
