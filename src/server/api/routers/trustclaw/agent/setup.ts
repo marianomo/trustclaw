@@ -147,6 +147,9 @@ export async function prepareAgentRun(
     manageConnections: {
       waitForConnections: true,
     },
+    workbench: {
+      enableProxyExecution: true,
+    },
   });
   const composioTools = await session.tools();
 
