@@ -1,6 +1,7 @@
 import { ToolLoopAgent, stepCountIs } from "ai";
 import type { ToolSet, SystemModelMessage } from "ai";
 import { google } from "@ai-sdk/google";
+import { groq } from "@ai-sdk/groq";
 import { db } from "~/server/clients/db";
 import { createComposioClient } from "~/server/clients/composio";
 import { buildSystemPrompt } from "./system-prompt";
@@ -117,7 +118,7 @@ export async function prepareAgentRun(
   const contextWindow = getContextWindow(instance.anthropicModel);
   const { messages: prunedMessages } = pruneContext(aiMessages, contextWindow);
 
-  const isAnthropicModel = !instance.anthropicModel.startsWith("google/");
+  const isAnthropicModel = !instance.anthropicModel.startsWith("google/") && !instance.anthropicModel.startsWith("groq/");
 
   // Add cache breakpoint to last history message (only for Anthropic models)
   if (isAnthropicModel && prunedMessages.length >= 2) {
@@ -173,6 +174,9 @@ export async function prepareAgentRun(
   const resolveModel = (modelId: string) => {
     if (modelId.startsWith("google/")) {
       return google(modelId.replace("google/", ""));
+    }
+    if (modelId.startsWith("groq/")) {
+      return groq(modelId.replace("groq/", ""));
     }
     return modelId.startsWith("anthropic/") ? modelId : `anthropic/${modelId}`;
   };
