@@ -1,5 +1,6 @@
 import { ToolLoopAgent, stepCountIs } from "ai";
 import type { ToolSet, SystemModelMessage } from "ai";
+import { google } from "@ai-sdk/google";
 import { db } from "~/server/clients/db";
 import { createComposioClient } from "~/server/clients/composio";
 import { buildSystemPrompt } from "./system-prompt";
@@ -116,9 +117,10 @@ export async function prepareAgentRun(
   const contextWindow = getContextWindow(instance.anthropicModel);
   const { messages: prunedMessages } = pruneContext(aiMessages, contextWindow);
 
-  // Add cache breakpoint to last history message (before new user message)
-  // so the conversation prefix is cached across turns
-  if (prunedMessages.length >= 2) {
+  const isAnthropicModel = !instance.anthropicModel.startsWith("google/");
+
+  // Add cache breakpoint to last history message (only for Anthropic models)
+  if (isAnthropicModel && prunedMessages.length >= 2) {
     const lastHistoryIndex = prunedMessages.length - 2;
     const msg = prunedMessages[lastHistoryIndex]!;
     prunedMessages[lastHistoryIndex] = {
@@ -168,19 +170,24 @@ export async function prepareAgentRun(
     },
   });
 
-  const modelString = instance.anthropicModel.startsWith("anthropic/")
-    ? instance.anthropicModel
-    : `anthropic/${instance.anthropicModel}`;
-  const model = modelString;
+  const resolveModel = (modelId: string) => {
+    if (modelId.startsWith("google/")) {
+      return google(modelId.replace("google/", ""));
+    }
+    return modelId.startsWith("anthropic/") ? modelId : `anthropic/${modelId}`;
+  };
+  const model = resolveModel(instance.anthropicModel);
 
   const agent = new ToolLoopAgent({
     model,
     instructions: {
       role: "system",
       content: systemPrompt,
-      providerOptions: {
-        anthropic: { cacheControl: { type: "ephemeral" } },
-      },
+      ...(isAnthropicModel && {
+        providerOptions: {
+          anthropic: { cacheControl: { type: "ephemeral" } },
+        },
+      }),
     } satisfies SystemModelMessage,
     tools: allTools,
     stopWhen: stepCountIs(100),
